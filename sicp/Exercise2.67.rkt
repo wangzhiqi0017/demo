@@ -66,6 +66,11 @@
         ((eq? x (car set)) true)
         (else (element-of-set? x (cdr set)))))
 
+;Display
+(define (display-newline data)
+  (display data)
+  (newline))
+
 ;========================================================
 ;Exercise 2.67
 ; Use the decode procedure to decode the message, and give the result.
@@ -77,7 +82,7 @@
                                    (make-leaf 'C 1)))))
 
 (define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
-(display (decode sample-message sample-tree))
+(display-newline (decode sample-message sample-tree))
 
 ;Exercise 2.68
 ; The encode procedure takes as arguments a message and a tree and produces the list of bits
@@ -102,4 +107,82 @@
           (cons '1 (encode-symbol symbol (right-branch tree))))
          (else (error "bad symbol -- Encode-SYMBOL" symbol))))
 
- (display (encode '(a d a b b c a) sample-tree))
+ (display-newline  (encode '(a d a b b c a) sample-tree))
+
+;Exercise 2.69
+; The following procedure takes as its argument a list of symbol-frequency pairs
+; (where no symbol appears in more than one pair)
+; and generates a Huffman encoding tree according to the Huffman algorithm.
+; Make-leaf-set is the procedure given above that transforms the list of pairs into an ordered set of leaves.
+; Successive-merge is the procedure you must write,
+; using make-code-tree to successively merge the smallest-weight elements of the set until there is only one element left,
+; which is the desired Huffman tree.
+; (This procedure is slightly tricky, but not really complicated.
+;  If you find yourself designing a complex procedure, then you are almost certainly doing something wrong.
+;  You can take significant advantage of the fact that we are using an ordered set representation.)
+
+(define (generate-huffman-tree pairs)
+  (successive-merge (make-leaf-set pairs)))
+
+(define (successive-merge leaf-set)
+  (cond ((null? leaf-set) '())
+        ((null? (cdr leaf-set)) (car leaf-set))
+        (else (successive-merge
+               (adjoin-set
+                (make-code-tree (car leaf-set) (cadr leaf-set))
+                (cddr leaf-set))))))
+
+(define huf-tree (generate-huffman-tree (list '(C 1) '(B 2) '(A 4) '(D 1))))
+(display-newline sample-tree)
+(display-newline huf-tree)
+(display-newline (encode '(a d a b b c a) huf-tree))
+(display-newline (decode sample-message huf-tree))
+
+;Exercise 2.70
+; The following eight-symbol alphabet with associated relative frequencies
+; was designed to efficiently encode the lyrics of 1950s rock songs.
+; (Note that the ``symbols'' of an ``alphabet'' need not be individual letters.)
+;
+; A	2	NA	16
+; BOOM	1	SHA	3
+; GET	2	YIP	9
+; JOB	2	WAH	1
+; 
+; Use generate-huffman-tree (exercise 2.69) to generate a corresponding Huffman tree,
+; and use encode (exercise 2.68) to encode the following message:
+;
+; Get a job
+; Sha na na na na na na na na
+; Get a job
+; Sha na na na na na na na na
+; Wah yip yip yip yip yip yip yip yip yip
+; Sha boom
+; 
+; How many bits are required for the encoding?
+; What is the smallest number of bits that would be needed to encode this song
+; if we used a fixed-length code for the eight-symbol alphabet?
+; fixed-length: bits per symbol * bits count => log,2,8 * 36 = 3.36 = 108
+; variable-length: 14*2 + 12*2 + 23 + 9 = 84
+(define lyric-tree
+         (generate-huffman-tree
+                     (list '(A 2) '(NA 16) '(BOOM 1) '(SHA 3) '(GET 2) '(YIP 9) '(JOB 2) '(WAH 1))))
+(display-newline lyric-tree)
+(display-newline (encode '(Get a job) lyric-tree))
+(display-newline (encode '(Sha na na na na na na na na) lyric-tree))
+(display-newline (encode '(Wah yip yip yip yip yip yip yip yip yip) lyric-tree))
+(display-newline (encode '(Sha boom) lyric-tree))
+
+;Exercice 2.71
+; Suppose we have a Huffman tree for an alphabet of n symbols,
+; and that the relative frequencies of the symbols are 1, 2, 4, ..., 2n-1.
+; Sketch the tree for n=5; for n=10.
+; In such a tree (for general n) how many bits are required to encode the most frequent symbol? the least frequent symbol?
+
+;Exercise 2.72
+; Consider the encoding procedure that you designed in exercise 2.68.
+; What is the order of growth in the number of steps needed to encode a symbol?
+; Be sure to include the number of steps needed to search the symbol list at each node encountered.
+; To answer this question in general is difficult.
+; Consider the special case where the relative frequencies of the n symbols are as described in exercise 2.71,
+; and give the order of growth (as a function of n) of the number of steps needed
+; to encode the most frequent and least frequent symbols in the alphabet.
